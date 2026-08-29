@@ -41,7 +41,7 @@ footer{background:#041122;color:#aebed0;padding:34px 0}.footer-grid{display:flex
 <section class="section" id="services"><div class="wrap"><h2>What needs fixing?</h2><p class="sub">TileFix GTA is focused on repairs and service calls — not full renovations.</p><div class="services" id="serviceCards"></div></div></section>
 <section class="section alt" id="how"><div class="wrap"><h2>How TileFix GTA works</h2><p class="sub">A simple process built for busy homeowners, landlords and property managers.</p><div class="steps"><div class="step-card"><div class="num">1</div><h3>Choose the problem</h3><p>Select the repair type and tell us what’s happening.</p></div><div class="step-card"><div class="num">2</div><h3>Upload photos</h3><p>Add clear photos so the repair can be reviewed before arrival.</p></div><div class="step-card"><div class="num">3</div><h3>Get a starting estimate</h3><p>See an initial service estimate based on the repair and area.</p></div><div class="step-card"><div class="num">4</div><h3>Request your visit</h3><p>Choose a date and time window and submit your booking request.</p></div></div></div></section>
 
-<section class="booking" id="book"><div class="wrap"><div class="booking-shell"><div class="progress-wrap"><div class="progress-text"><span id="stepLabel">Step 1 of 7</span><strong id="stepTitle">Choose the problem</strong></div><div class="progress"><div id="progressBar"></div></div></div><form class="booking-form" id="bookingForm">
+<section class="booking" id="book"><div class="wrap"><div class="booking-shell"><div id="backendStatus" style="padding:12px 18px;background:#eef6ff;color:#31506f;font-size:13px;border-bottom:1px solid #dce5f0">Checking secure booking connection…</div><div class="progress-wrap"><div class="progress-text"><span id="stepLabel">Step 1 of 7</span><strong id="stepTitle">Choose the problem</strong></div><div class="progress"><div id="progressBar"></div></div></div><form class="booking-form" id="bookingForm">
 <section class="step" data-step="1"><h2>What needs fixing?</h2><p class="sub">Choose the service that best matches your tile problem.</p><div class="choice-grid" id="serviceChoices"></div></section>
 <section class="step hidden" data-step="2"><h2>Show us the repair</h2><p class="sub">Upload up to 5 photos. Clear photos help us review the scope.</p><label class="upload"><input type="file" id="photoInput" accept="image/*" multiple><span class="plus">+</span><b>Tap to add repair photos</b><br><small>JPG, PNG or HEIC</small></label><div class="previews" id="previews"></div><label class="field-label">Additional details</label><textarea id="details" placeholder="Example: One cracked 24x24 porcelain tile in the kitchen. I have a spare tile."></textarea></section>
 <section class="step hidden" data-step="3"><h2>Replacement tile</h2><p class="sub">Matching replacement tile can reduce time and cost.</p><div class="radio-stack"><label><input type="radio" name="hasTile" value="Yes, customer has replacement tile"><span><b>Yes, I have replacement tile</b></span></label><label><input type="radio" name="hasTile" value="No, sourcing may be required"><span><b>No, I need help finding tile</b></span></label><label><input type="radio" name="hasTile" value="Not sure"><span><b>I’m not sure</b></span></label></div><label class="field-label">How many tiles / approximate area?</label><select id="quantity"><option value="1">1 tile / very small repair</option><option value="2-4">2–4 tiles / small area</option><option value="5+">5+ tiles / larger repair</option><option value="unknown">Not sure</option></select></section>
@@ -57,7 +57,7 @@ footer{background:#041122;color:#aebed0;padding:34px 0}.footer-grid{display:flex
 <section class="admin hidden" id="adminView"><div class="wrap"><div class="admin-head"><div><p class="eyebrow">TILEFIX GTA ADMIN</p><h2>Repair requests</h2></div><button class="btn secondary" id="closeAdmin">Back to site</button></div><div class="stats"><div class="stat"><span>Total requests</span><strong id="jobCount">0</strong></div><div class="stat"><span>Open value</span><strong id="jobValue">$0</strong></div><div class="stat"><span>Priority jobs</span><strong id="priorityCount">0</strong></div></div><div class="tools"><input id="jobSearch" type="search" placeholder="Search customer, city or job #"><select id="statusFilter"><option value="">All statuses</option><option>New</option><option>Accepted</option><option>On My Way</option><option>In Progress</option><option>Completed</option></select></div><div class="jobs" id="jobs"></div></div></section>
 <section class="admin hidden" id="techView"><div class="wrap"><div class="admin-head"><div><p class="eyebrow">TILEFIX GTA TECHNICIAN</p><h2>Assigned repair jobs</h2></div><button class="btn secondary" id="closeTech">Back to site</button></div><div class="jobs" id="techJobs"></div></div></section>
 
-<footer><div class="wrap footer-grid"><div><strong>TILEFIX GTA</strong><div class="small">Professional tile repair across Toronto & the GTA.</div></div><div class="small">Prototype website — connect secure backend, payments and notifications before commercial launch.</div><div class="small">© 2026 TileFix GTA</div></div></footer>
+<footer><div class="wrap footer-grid"><div><strong>TILEFIX GTA</strong><div class="small">Professional tile repair across Toronto & the GTA.</div></div><div class="small">Secure booking requests connected to Supabase. Online payments and customer notifications are not enabled yet.</div><div class="small">© 2026 TileFix GTA</div></div></footer>
 <div class="toast hidden" id="toast"></div>
 <script>
 (()=>{
@@ -70,7 +70,7 @@ const SERVICES={
 'Backsplash Repair':{price:300,icon:'▤',desc:'Small backsplash tile and grout repairs.'}
 };
 const ZONES={'Toronto':0,'Etobicoke':0,'North York':0,'Scarborough':0,'Vaughan':0,'Richmond Hill':0,'Markham':0,'Mississauga':0,'Brampton':35,'Oakville':35,'Pickering':35,'Ajax':35,'Burlington':65,'Other GTA':65};
-let step=1, selectedService='', photoCount=0;
+let step=1, selectedService='', photoCount=0, selectedFiles=[], supabaseConfig=null;
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 const money=n=>'$'+Number(n||0).toLocaleString('en-CA');
 const toast=(msg)=>{const t=$('#toast');t.textContent=msg;t.classList.remove('hidden');setTimeout(()=>t.classList.add('hidden'),2600)};
@@ -83,13 +83,124 @@ $$('[data-start]').forEach(b=>b.onclick=()=>{document.getElementById('book').scr
 $$('.choice').forEach(b=>b.onclick=()=>{$$('.choice').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');selectedService=b.dataset.service;updateEstimate()});
 function showStep(n){step=n;$$('.step').forEach(s=>s.classList.toggle('hidden',+s.dataset.step!==n));$('#backBtn').classList.toggle('hidden',n===1);$('#nextBtn').textContent=n===7?'Submit Booking Request':'Continue';$('#stepLabel').textContent=`Step ${n} of 7`;const titles=['Choose the problem','Upload photos','Replacement tile','Job location','Starting estimate','Appointment','Contact & reserve'];$('#stepTitle').textContent=titles[n-1];$('#progressBar').style.width=(n/7*100)+'%';if(n===5)updateEstimate();}
 function validate(){if(step===1&&!selectedService)return 'Choose a repair service first.';if(step===3&&!document.querySelector('input[name="hasTile"]:checked'))return 'Tell us whether you have replacement tile.';if(step===4&&(!$('#address').value.trim()||!$('#city').value||!$('#postal').value.trim()))return 'Enter the job address, city and postal code.';if(step===6&&(!$('#date').value||!$('#time').value))return 'Choose a preferred date and time window.';if(step===7&&(!$('#name').value.trim()||!$('#phone').value.trim()||!$('#email').value.trim()))return 'Enter your name, phone and email.';if(step===7&&!$('#terms').checked)return 'Please accept the estimate terms.';return ''}
-$('#nextBtn').onclick=()=>{const err=validate();if(err){toast(err);return}if(step<7)showStep(step+1);else submitJob()};$('#backBtn').onclick=()=>showStep(Math.max(1,step-1));
-$('#photoInput').onchange=e=>{const files=[...e.target.files].slice(0,5);photoCount=files.length;$('#previews').innerHTML='';files.forEach(f=>{const r=new FileReader();r.onload=ev=>$('#previews').insertAdjacentHTML('beforeend',`<div class="preview"><img alt="Repair photo preview" src="${ev.target.result}"></div>`);r.readAsDataURL(f)})};
+$('#nextBtn').onclick=async()=>{const err=validate();if(err){toast(err);return}if(step<7)showStep(step+1);else await submitJob()};$('#backBtn').onclick=()=>showStep(Math.max(1,step-1));
+$('#photoInput').onchange=e=>{selectedFiles=[...e.target.files].slice(0,5);photoCount=selectedFiles.length;$('#previews').innerHTML='';selectedFiles.forEach(f=>{const r=new FileReader();r.onload=ev=>$('#previews').insertAdjacentHTML('beforeend',`<div class="preview"><img alt="Repair photo preview" src="${ev.target.result}"></div>`);r.readAsDataURL(f)})};
 $('#city').onchange=()=>{const c=$('#city').value,fee=ZONES[c];const box=$('#coverage');if(!c){box.className='coverage';box.textContent='Select your city to check service coverage.';return}box.className='coverage '+(fee===0?'good':'warn');box.textContent=fee===0?'✓ You are in our standard service area. No zone fee.':`✓ Service area available. Estimated zone fee: ${money(fee)}.`;updateEstimate()};$('#quantity').onchange=updateEstimate;$('#priority').onchange=updateEstimate;
 function estimate(){const base=SERVICES[selectedService]?.price||0;const q=$('#quantity').value;const qty=q==='2-4'?100:q==='5+'?250:0;const zone=ZONES[$('#city').value]||0;const pri=$('#priority').checked?149:0;return {base:base+qty,zone,pri,total:base+qty+zone+pri}}
 function updateEstimate(){const e=estimate();$('#estService').textContent=selectedService||'—';$('#estBase').textContent=money(e.base);$('#estZone').textContent=money(e.zone);$('#estPriority').textContent=money(e.pri);$('#estTotal').textContent=money(e.total)}
 function getJobs(){try{return JSON.parse(localStorage.getItem('tilefix_jobs')||'[]')}catch{return[]}}function saveJobs(j){localStorage.setItem('tilefix_jobs',JSON.stringify(j))}
-function submitJob(){const e=estimate();const job={id:'TF-'+Date.now().toString().slice(-6),created:new Date().toISOString(),service:selectedService,details:$('#details').value.trim(),hasTile:document.querySelector('input[name="hasTile"]:checked')?.value||'',quantity:$('#quantity').value,address:$('#address').value.trim(),city:$('#city').value,postal:$('#postal').value.trim().toUpperCase(),priority:$('#priority').checked,date:$('#date').value,time:$('#time').value,name:$('#name').value.trim(),phone:$('#phone').value.trim(),email:$('#email').value.trim(),estimate:e.total,photoCount,status:'New'};const jobs=getJobs();jobs.unshift(job);saveJobs(jobs);$('#confirmName').textContent=job.name.split(' ')[0];$('#confirmSummary').innerHTML=`<div><span>Job #</span><strong>${job.id}</strong></div><div><span>Service</span><strong>${job.service}</strong></div><div><span>Location</span><strong>${job.city}</strong></div><div><span>Appointment</span><strong>${job.date} • ${job.time}</strong></div><div><span>Starting estimate</span><strong>${money(job.estimate)} + HST</strong></div><div><span>Deposit</span><strong>Not charged (prototype)</strong></div>`;$('#siteMain').classList.add('hidden');$('#confirmation').classList.remove('hidden');window.scrollTo({top:0,behavior:'smooth'});renderJobs()}
+async function loadSupabaseConfig(){
+  if(supabaseConfig)return supabaseConfig;
+  const status=$('#backendStatus');
+  try{
+    const r=await fetch('/api/config',{cache:'no-store'});
+    if(!r.ok)throw new Error('Configuration unavailable');
+    const c=await r.json();
+    if(!c.url||!c.key)throw new Error('Supabase environment variables are missing');
+    supabaseConfig=c;
+    if(status){status.textContent='✓ Secure booking connection ready';status.style.background='#ecfbf5';status.style.color='#116847'}
+    return c;
+  }catch(err){
+    if(status){status.textContent='Booking connection needs setup before customers can submit requests.';status.style.background='#fff8ec';status.style.color='#8a5610'}
+    throw err;
+  }
+}
+function supabaseHeaders(c,extra={}){return {'apikey':c.key,'Authorization':'Bearer '+c.key,...extra}}
+function safeFileName(name){return String(name||'photo.jpg').replace(/[^a-zA-Z0-9._-]/g,'-').slice(-120)}
+async function uploadBookingPhotos(c,bookingId){
+  let uploaded=0;
+  for(let i=0;i<selectedFiles.length;i++){
+    const f=selectedFiles[i];
+    const path=`bookings/${bookingId}/${Date.now()}-${i+1}-${safeFileName(f.name)}`;
+    const r=await fetch(`${c.url}/storage/v1/object/booking-photos/${encodeURI(path)}`,{
+      method:'POST',
+      headers:supabaseHeaders(c,{'Content-Type':f.type||'application/octet-stream','x-upsert':'false'}),
+      body:f
+    });
+    if(r.ok)uploaded++;
+  }
+  return uploaded;
+}
+async function submitJob(){
+  const btn=$('#nextBtn');
+  const oldText=btn.textContent;
+  btn.disabled=true;btn.textContent='Submitting…';
+  try{
+    const c=await loadSupabaseConfig();
+    const e=estimate();
+    const hasTile=document.querySelector('input[name="hasTile"]:checked')?.value||'';
+    const payload={
+      customer_name:$('#name').value.trim(),
+      customer_email:$('#email').value.trim(),
+      customer_phone:$('#phone').value.trim(),
+      address:$('#address').value.trim(),
+      city:$('#city').value,
+      postal_code:$('#postal').value.trim().toUpperCase(),
+      service_type:selectedService,
+      repair_description:$('#details').value.trim()||null,
+      has_replacement_tile:hasTile||null,
+      tile_quantity:$('#quantity').value||null,
+      service_zone:$('#city').value||null,
+      priority_service:$('#priority').checked,
+      preferred_date:$('#date').value||null,
+      preferred_time:$('#time').value||null,
+      starting_estimate:e.total,
+      deposit_status:'unpaid',
+      job_status:'new'
+    };
+    const r=await fetch(`${c.url}/rest/v1/bookings`,{
+      method:'POST',
+      headers:supabaseHeaders(c,{'Content-Type':'application/json','Prefer':'return=representation'}),
+      body:JSON.stringify(payload)
+    });
+    if(!r.ok){
+      const msg=await r.text();
+      throw new Error(msg||'Booking could not be saved');
+    }
+    const rows=await r.json();
+    const saved=Array.isArray(rows)?rows[0]:rows;
+    const bookingId=saved?.id;
+    if(!bookingId)throw new Error('Booking was saved but no booking ID was returned');
+    let uploaded=0;
+    if(selectedFiles.length){
+      try{uploaded=await uploadBookingPhotos(c,bookingId)}catch(_){}
+    }
+    const job={
+      id:'TF-'+String(bookingId).slice(0,8).toUpperCase(),
+      serverId:bookingId,
+      created:saved?.created_at||new Date().toISOString(),
+      service:selectedService,
+      details:payload.repair_description||'',
+      hasTile,
+      quantity:payload.tile_quantity,
+      address:payload.address,
+      city:payload.city,
+      postal:payload.postal_code,
+      priority:payload.priority_service,
+      date:payload.preferred_date,
+      time:payload.preferred_time,
+      name:payload.customer_name,
+      phone:payload.customer_phone,
+      email:payload.customer_email,
+      estimate:e.total,
+      photoCount:uploaded,
+      status:'New'
+    };
+    const jobs=getJobs();jobs.unshift(job);saveJobs(jobs);
+    $('#confirmName').textContent=job.name.split(' ')[0];
+    $('#confirmSummary').innerHTML=`<div><span>Job #</span><strong>${job.id}</strong></div><div><span>Service</span><strong>${job.service}</strong></div><div><span>Location</span><strong>${job.city}</strong></div><div><span>Appointment</span><strong>${job.date} • ${job.time}</strong></div><div><span>Starting estimate</span><strong>${money(job.estimate)} + HST</strong></div><div><span>Photos uploaded</span><strong>${uploaded} of ${selectedFiles.length}</strong></div><div><span>Deposit</span><strong>Not charged yet</strong></div>`;
+    const p=$('#confirmation p');
+    if(p&&p.textContent.includes('saved'))p.textContent='Your TileFix GTA repair request has been securely received.';
+    $('#siteMain').classList.add('hidden');$('#confirmation').classList.remove('hidden');window.scrollTo({top:0,behavior:'smooth'});renderJobs();
+  }catch(err){
+    console.error(err);
+    toast('Booking could not be submitted. Please try again.');
+    const status=$('#backendStatus');
+    if(status){status.textContent='Booking connection error. Please contact TileFix GTA.';status.style.background='#fff0f0';status.style.color='#a53b3b'}
+  }finally{
+    btn.disabled=false;btn.textContent=oldText;
+  }
+}
 $('#newBooking').onclick=()=>{location.reload()};
 function openView(id){$('#siteMain').classList.add('hidden');$('#adminView').classList.add('hidden');$('#techView').classList.add('hidden');$('#'+id).classList.remove('hidden');renderJobs();window.scrollTo(0,0)};function closeViews(){location.reload()}
 $('#adminBtn').onclick=()=>openView('adminView');$('#techBtn').onclick=()=>openView('techView');$('#closeAdmin').onclick=closeViews;$('#closeTech').onclick=closeViews;
@@ -97,7 +208,7 @@ function statusOptions(current){return ['New','Accepted','On My Way','In Progres
 function renderJobs(){const all=getJobs();$('#jobCount').textContent=all.length;$('#priorityCount').textContent=all.filter(j=>j.priority).length;$('#jobValue').textContent=money(all.filter(j=>j.status!=='Completed').reduce((s,j)=>s+j.estimate,0));const q=($('#jobSearch')?.value||'').toLowerCase(),sf=$('#statusFilter')?.value||'';const filtered=all.filter(j=>(!q||[j.id,j.name,j.city,j.service].join(' ').toLowerCase().includes(q))&&(!sf||j.status===sf));const markup=filtered.length?filtered.map(j=>jobHTML(j)).join(''):'<div class="empty">No repair requests yet. Submit a test booking from the customer form to see it here.</div>';$('#jobs').innerHTML=markup;$('#techJobs').innerHTML=all.length?all.map(j=>jobHTML(j,true)).join(''):'<div class="empty">No assigned jobs yet.</div>';$$('[data-job-status]').forEach(s=>s.onchange=()=>{const jobs=getJobs(),x=jobs.find(j=>j.id===s.dataset.jobStatus);if(x){x.status=s.value;saveJobs(jobs);renderJobs();toast('Job status updated')}})}
 function jobHTML(j,tech=false){return `<article class="job"><div class="job-top"><div><h3>${j.id} • ${j.service}</h3><div class="meta"><b>${j.name}</b> • ${j.phone}<br>${j.address}, ${j.city} ${j.postal}<br>${j.date} • ${j.time} • ${j.photoCount} photo(s)</div></div><div><span class="pill">${j.status}</span> ${j.priority?'<span class="pill priority">Priority</span>':''}</div></div><div class="job-actions"><select data-job-status="${j.id}">${statusOptions(j.status)}</select><span class="pill">Estimate ${money(j.estimate)}</span></div></article>`}
 $('#jobSearch').oninput=renderJobs;$('#statusFilter').onchange=renderJobs;
-const today=new Date();today.setDate(today.getDate()+1);$('#date').min=today.toISOString().slice(0,10);showStep(1);renderJobs();
+const today=new Date();today.setDate(today.getDate()+1);$('#date').min=today.toISOString().slice(0,10);showStep(1);renderJobs();loadSupabaseConfig().catch(()=>{});
 })();
 </script>
 </body>
