@@ -105,7 +105,7 @@ async function loadSupabaseConfig(){
     throw err;
   }
 }
-function supabaseHeaders(c,extra={}){return {'apikey':c.key,'Authorization':'Bearer '+c.key,...extra}}
+function supabaseHeaders(c,extra={}){return {'apikey':c.key,...extra}}
 function safeFileName(name){return String(name||'photo.jpg').replace(/[^a-zA-Z0-9._-]/g,'-').slice(-120)}
 async function uploadBookingPhotos(c,bookingId){
   let uploaded=0;
