@@ -126,7 +126,7 @@ async function submitJob(){
   const btn=$('#nextBtn');
   const oldText=btn.textContent;
   btn.disabled=true;btn.textContent='Submitting…';
-try{ window.location.href='https://buy.stripe.com/eVq28r3NE6CbcLW0lPeIw00'; return;
+try{ 
     const c=await loadSupabaseConfig();
     const e=estimate();
     const hasTile=document.querySelector('input[name="hasTile"]:checked')?.value||'';
@@ -192,6 +192,7 @@ try{ window.location.href='https://buy.stripe.com/eVq28r3NE6CbcLW0lPeIw00'; retu
     $('#confirmSummary').innerHTML=`<div><span>Job #</span><strong>${job.id}</strong></div><div><span>Service</span><strong>${job.service}</strong></div><div><span>Location</span><strong>${job.city}</strong></div><div><span>Appointment</span><strong>${job.date} • ${job.time}</strong></div><div><span>Starting estimate</span><strong>${money(job.estimate)} + HST</strong></div><div><span>Photos uploaded</span><strong>${uploaded} of ${selectedFiles.length}</strong></div><div><span>Deposit</span><strong>Not charged yet</strong></div>`;
     const p=$('#confirmation p');
     if(p&&p.textContent.includes('saved'))p.textContent='Your TileFix GTA repair request has been securely received.';
+  $('#confirmation').classList.remove('hidden');
     $('#siteMain').classList.add('hidden');$('#confirmation').classList.remove('hidden');window.scrollTo({top:0,behavior:'smooth'});renderJobs();
   }catch(err){
     console.error(err);
