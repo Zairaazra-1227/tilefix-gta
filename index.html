@@ -125,7 +125,7 @@ async function submitJob(){
   const btn=$('#nextBtn');
   const oldText=btn.textContent;
   btn.disabled=true;btn.textContent='Submitting…';
-window.location.href='https://buy.stripe.com/eVq28r3NE6CbcLW0lPeIw00'; return;
+try{ window.location.href='https://buy.stripe.com/eVq28r3NE6CbcLW0lPeIw00'; return;
     const c=await loadSupabaseConfig();
     const e=estimate();
     const hasTile=document.querySelector('input[name="hasTile"]:checked')?.value||'';
